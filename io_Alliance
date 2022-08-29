@@ -1,0 +1,50 @@
+const kats_url = "https://scripts.lss-kats-bund.de";
+
+if (!aAlliance) var aAlliance = {};
+if (!aMissions) var aMissions = [];
+if (!aVehicleTypesNew) var aVehicleTypesNew = [];
+
+(async function() {
+
+    if (localStorage.kats_config && JSON.parse(localStorage.kats_config).polstyle === true) {
+        $("body").removeClass("missionchief").addClass("policechief");
+    }
+
+    const path = window.location.pathname.replace(/\d+/g, "");
+
+    if (!["/missions/", "/", "/alliance_messages", "/verband/bewerbungen", "/verband/mitglieder", "/messages/new", "/profile/", "/vehicles//zuweisung"].includes(path)) {
+        return false;
+    }
+
+    await $.getScript(`${ kats_url }/additional/variables_functions.js?${ new Date().getTime() }`);
+
+    if (Object.keys(aAlliance).length === 0) {
+        await $.getScript("https://api.lss-cockpit.de/lib/utf16convert.js");
+        if (!sessionStorage.cAlliance || JSON.parse(sessionStorage.cAlliance).lastUpdate < (new Date().getTime() - 5 * 1000 * 60) || JSON.parse(sessionStorage.cAlliance).userId != user_id) {
+            await $.getJSON("/api/allianceinfo").done(d => sessionStorage.setItem("cAlliance", JSON.stringify({ lastUpdate: new Date().getTime(), value: LZString.compressToUTF16(JSON.stringify(d)), userId: user_id })));
+        }
+        aAlliance = JSON.parse(LZString.decompressFromUTF16(JSON.parse(sessionStorage.cAlliance).value));
+    }
+
+    user = aAlliance.users.find(u => u.id === user_id);
+    user.alliance_swadmin = user.roles.includes("Sprechwunsch-Admin");
+
+    if (path === "/") {
+        user.alliance_admin = alliance_admin;
+        user.alliance_coadmin = alliance_coadmin;
+    } else {
+        user.alliance_admin = user.roles.includes("Verbands-Admin");
+        user.alliance_coadmin = user.roles.includes("Verbands-Co-Admin");
+    }
+
+    if (aAlliance.id !== 14248) {
+        alert("Dieses Script ist dem Verband Bundesweiter KatSchutz (Bund) vorbehalten!");
+        return false;
+    }
+
+
+    $('head').append(`<link rel="stylesheet" href="${ kats_url }/additional/main.css?${ new Date().getTime() }" type="text/css" />`);
+
+    loadKatsModules(path);
+
+})();
